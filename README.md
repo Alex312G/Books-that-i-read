@@ -1,16 +1,16 @@
 # 📚 My Reading Log
 
-*Updated automatically by my Bookshelf app — last update Oct 18, 2026, 5:57 PM*
+*Updated automatically by my Bookshelf app — last update Oct 18, 2026, 6:04 PM*
 
 | ⏱️ Total reading time | 📅 Last 7 days | 📖 Reading now | ✅ Finished |
 |:-:|:-:|:-:|:-:|
-| **0 min** | **0 min** | **1** | **0** |
+| **2 min** | **2 min** | **1** | **0** |
 
 ## 📖 Currently reading
 
 | Book | Progress | Time read | Last read |
 |---|---|---|---|
-| **How-Linux-Works-What-Every-Superuser-Should-Know** | `░░░░░░░░░░` 0% — page 1 of 464 | — | Oct 18, 2026 |
+| **How-Linux-Works-What-Every-Superuser-Should-Know** | `█░░░░░░░░░` 9% — page 43 of 464 | 2 min | Oct 18, 2026 |
 
 ## 📚 On the shelf
 
@@ -18,4 +18,4 @@
 
 ## 🕒 Reading sessions
 
-*No reading sessions yet.*
+- **Oct 18, 2026, 5:58 PM** — read **How-Linux-Works-What-Every-Superuser-Should-Know** for **2 min**, now on page **43** of 464 *(from page 1)*
