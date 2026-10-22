@@ -1,0 +1,1880 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self'; worker-src 'self' blob:; connect-src 'self' blob: data: https://api.github.com">
+<title>Bookshelf</title>
+<script src="vendor/pdf.min.js"></script>
+<script src="web-bridge.js"></script>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1b1814">
+<style>
+  @font-face { font-family: Fraunces; font-weight: 500; font-display: swap; src: url(vendor/fonts/fraunces-500.woff2) format('woff2'); }
+  @font-face { font-family: Fraunces; font-weight: 600; font-display: swap; src: url(vendor/fonts/fraunces-600.woff2) format('woff2'); }
+  @font-face { font-family: Inter; font-weight: 400; font-display: swap; src: url(vendor/fonts/inter-400.woff2) format('woff2'); }
+  @font-face { font-family: Inter; font-weight: 500; font-display: swap; src: url(vendor/fonts/inter-500.woff2) format('woff2'); }
+  @font-face { font-family: Inter; font-weight: 600; font-display: swap; src: url(vendor/fonts/inter-600.woff2) format('woff2'); }
+
+  :root {
+    --bg: #f6f1e9;
+    --surface: #fffdf9;
+    --surface-2: #efe7da;
+    --viewer-bg: #e4dccf;
+    --text: #2a241d;
+    --muted: #7a6e60;
+    --border: #e2d8c8;
+    --accent: #b5562b;
+    --accent-soft: #f3dccd;
+    --track: #e8dfd1;
+    --star: #e0a42b;
+    --shadow: 0 1px 2px rgba(60,40,20,.08), 0 6px 18px rgba(60,40,20,.10);
+    --danger: #b3261e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1b1814;
+      --surface: #25211c;
+      --surface-2: #2f2a23;
+      --viewer-bg: #12100d;
+      --text: #efe8dd;
+      --muted: #a89c8c;
+      --border: #3a342b;
+      --accent: #e0814f;
+      --accent-soft: #4a3022;
+      --track: #3a342b;
+      --star: #f0b84a;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.35);
+      --danger: #f28b82;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1b1814; --surface: #25211c; --surface-2: #2f2a23; --viewer-bg: #12100d;
+    --text: #efe8dd; --muted: #a89c8c; --border: #3a342b; --accent: #e0814f;
+    --accent-soft: #4a3022; --track: #3a342b; --star: #f0b84a;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.35); --danger: #f28b82;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 15px/1.5 Inter, system-ui, -apple-system, Segoe UI, sans-serif;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  .serif { font-family: Fraunces, Georgia, serif; }
+  svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    border: 1px solid var(--border); background: var(--surface);
+    padding: 8px 14px; border-radius: 10px; font-weight: 500;
+  }
+  .btn:hover { background: var(--surface-2); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { filter: brightness(1.07); }
+  .icon-btn {
+    display: inline-grid; place-items: center; width: 36px; height: 36px;
+    border: none; background: transparent; border-radius: 9px;
+  }
+  .icon-btn:hover { background: var(--surface-2); }
+  .icon-btn.on { background: var(--accent-soft); color: var(--accent); }
+
+  /* ---------- Library ---------- */
+  #library { max-width: 1200px; margin: 0 auto; padding: 0 24px 64px; }
+  .lib-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 32px 0 24px; flex-wrap: wrap;
+  }
+  .lib-head h1 { margin: 0; font-size: 34px; font-weight: 600; letter-spacing: -.01em; }
+  .lib-head p { margin: 2px 0 0; color: var(--muted); }
+
+  .continue {
+    display: flex; gap: 20px; align-items: center;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 16px; margin-bottom: 32px; cursor: pointer; box-shadow: var(--shadow);
+  }
+  .continue:hover { border-color: var(--accent); }
+  .continue img { width: 72px; aspect-ratio: 2/3; object-fit: cover; border-radius: 6px; background: var(--surface-2); }
+  .continue .lbl { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); font-weight: 600; }
+  .continue h2 { margin: 2px 0 10px; font-size: 22px; font-weight: 600; }
+  .continue .grow { flex: 1; min-width: 0; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 28px 22px; }
+  .card { cursor: pointer; position: relative; }
+  .card .cover-wrap {
+    position: relative; aspect-ratio: 2/3; border-radius: 8px; overflow: hidden;
+    background: var(--surface-2); box-shadow: var(--shadow); transition: transform .15s ease;
+  }
+  .card:hover .cover-wrap { transform: translateY(-3px); }
+  .card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .card .actions {
+    position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; opacity: 0; transition: opacity .15s;
+  }
+  .card:hover .actions, .card:focus-within .actions { opacity: 1; }
+  .card .actions button {
+    width: 30px; height: 30px; border-radius: 8px; border: none; display: grid; place-items: center;
+    background: rgba(20,15,10,.7); color: #fff;
+  }
+  .card .actions button:hover { background: rgba(20,15,10,.9); }
+  .card .actions svg { width: 15px; height: 15px; }
+  .card .badge {
+    position: absolute; left: 8px; bottom: 8px; background: rgba(20,15,10,.72); color: #fff;
+    font-size: 12px; padding: 2px 8px; border-radius: 99px; display: flex; gap: 4px; align-items: center;
+  }
+  .card .badge svg { width: 12px; height: 12px; }
+  .card h3 {
+    margin: 12px 0 6px; font-size: 15px; font-weight: 600; line-height: 1.3;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .stars-mini { color: var(--star); font-size: 13px; letter-spacing: 1px; height: 18px; }
+
+  /* progress meter */
+  .meter { height: 6px; background: var(--track); border-radius: 99px; overflow: hidden; }
+  .meter > div { height: 100%; background: var(--accent); border-radius: 99px; transition: width .3s; }
+  .meter-text { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--muted); margin-top: 5px; gap: 8px; }
+  .meter-text b { color: var(--text); font-weight: 600; }
+
+  .empty {
+    border: 2px dashed var(--border); border-radius: 20px; padding: 72px 24px; text-align: center; color: var(--muted);
+  }
+  .empty h2 { color: var(--text); margin: 12px 0 6px; font-size: 24px; font-weight: 600; }
+  .empty svg { width: 44px; height: 44px; stroke-width: 1.5; color: var(--accent); }
+
+  #drop {
+    position: fixed; inset: 0; background: color-mix(in srgb, var(--accent) 18%, transparent);
+    border: 4px dashed var(--accent); display: none; place-items: center; z-index: 50;
+    font-size: 26px; font-weight: 600; color: var(--accent); pointer-events: none;
+  }
+  #drop.show { display: grid; }
+
+  /* ---------- Reader ---------- */
+  #reader { position: fixed; inset: 0; display: none; flex-direction: column; background: var(--bg); z-index: 10; }
+  #reader.open { display: flex; }
+  .r-bar {
+    display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .r-title { flex: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: text; }
+  .pager { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 14px; }
+  .pager input {
+    width: 56px; text-align: center; padding: 5px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--bg); color: var(--text); font: inherit;
+  }
+  .zoom-val { width: 46px; text-align: center; font-size: 13px; color: var(--muted); }
+  .sep { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
+  .r-progress { height: 3px; background: var(--track); }
+  .r-progress > div { height: 100%; background: var(--accent); width: 0; transition: width .2s; }
+
+  .r-body { flex: 1; display: flex; min-height: 0; position: relative; }
+  #viewer { flex: 1; overflow: auto; background: var(--viewer-bg); position: relative; }
+  #pages { padding: 20px 0 40px; }
+  .page {
+    margin: 0 auto 18px; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,.18); position: relative;
+  }
+  .page canvas { display: block; }
+  .page .pnum {
+    position: absolute; left: 100%; top: 0; margin-left: 10px; font-size: 12px; color: var(--muted); white-space: nowrap;
+  }
+  .page .note-flag {
+    position: absolute; right: -6px; top: 14px; width: 22px; height: 22px; border-radius: 6px;
+    background: var(--accent); color: #fff; display: grid; place-items: center; cursor: pointer; box-shadow: var(--shadow);
+  }
+  .page .note-flag svg { width: 13px; height: 13px; }
+
+  #side {
+    width: 360px; flex: none; background: var(--surface); border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; min-height: 0;
+  }
+  #side.hidden { display: none; }
+  .tabs { display: flex; border-bottom: 1px solid var(--border); padding: 0 8px; }
+  .tabs button {
+    flex: 1; background: none; border: none; padding: 12px 8px; font-weight: 500; color: var(--muted);
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  .tabs button.on { color: var(--text); border-color: var(--accent); }
+  .tab { flex: 1; overflow: auto; padding: 18px; display: none; }
+  .tab.on { display: block; }
+  .tab h4 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; }
+  textarea {
+    width: 100%; resize: vertical; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;
+    background: var(--bg); color: var(--text); font: inherit; line-height: 1.55;
+  }
+  textarea:focus, .pager input:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+  .stars { display: flex; gap: 2px; margin-bottom: 20px; }
+  .stars button { background: none; border: none; padding: 2px; color: var(--track); }
+  .stars button svg { width: 28px; height: 28px; fill: currentColor; stroke: none; }
+  .stars button.on { color: var(--star); }
+  .saved { font-size: 12px; color: var(--muted); height: 18px; margin-top: 6px; }
+  .note-add { margin-bottom: 22px; }
+  .note-add .row { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; gap: 8px; }
+  .note-add .row span { font-size: 13px; color: var(--muted); }
+  .note {
+    border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-bottom: 10px; background: var(--bg);
+  }
+  .note .meta { display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; color: var(--muted); margin-bottom: 4px; }
+  .note .meta a { color: var(--accent); font-weight: 600; cursor: pointer; text-decoration: none; }
+  .note .meta a:hover { text-decoration: underline; }
+  .note .del { border: none; background: none; color: var(--muted); padding: 2px; border-radius: 6px; }
+  .note .del:hover { color: var(--danger); }
+  .note .del svg { width: 14px; height: 14px; }
+  .note p { margin: 0; white-space: pre-wrap; word-wrap: break-word; }
+  .muted { color: var(--muted); font-size: 14px; }
+
+  #loading { position: absolute; inset: 0; display: none; place-items: center; color: var(--muted); }
+  #loading.show { display: grid; }
+
+  #toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);
+    background: var(--text); color: var(--bg); padding: 10px 18px; border-radius: 10px; opacity: 0;
+    transition: all .2s; z-index: 100; pointer-events: none; max-width: calc(100% - 32px);
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  dialog {
+    border: 1px solid var(--border); border-radius: 16px; padding: 22px; width: min(420px, calc(100% - 32px));
+    background: var(--surface); color: var(--text); box-shadow: var(--shadow);
+  }
+  dialog::backdrop { background: rgba(10, 8, 5, .45); }
+  dialog h3 { margin: 0 0 6px; font-size: 18px; }
+  dialog p { margin: 0 0 14px; color: var(--muted); }
+  dialog p:empty { display: none; }
+  dialog input {
+    width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 10px;
+    background: var(--bg); color: var(--text); font: inherit; margin-bottom: 16px;
+  }
+  dialog input:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+  .modal-btns { display: flex; justify-content: flex-end; gap: 8px; }
+  .btn.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+  .btn:disabled { opacity: .6; cursor: default; }
+  #gh-dialog { width: min(500px, calc(100% - 32px)); }
+  #gh-dialog code { background: var(--surface-2); padding: 1px 5px; border-radius: 5px; font-size: 13px; }
+  .field { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .field input { margin: 6px 0 12px; font-weight: 400; }
+  .field .opt { font-weight: 400; color: var(--muted); }
+  .hint { font-size: 13px; line-height: 1.5; }
+  .hint a, .sync.err { color: var(--accent); }
+  .check { display: flex; gap: 8px; align-items: center; font-size: 14px; margin-bottom: 14px; cursor: pointer; }
+  .check input { width: auto; margin: 0; accent-color: var(--accent); }
+  .gh-status { font-size: 13px; color: var(--muted); min-height: 20px; margin-bottom: 10px; }
+  .gh-status.err { color: var(--danger); }
+
+  .head-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* sites */
+  .sec-title { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; margin: 8px 0 16px; display: flex; align-items: center; gap: 8px; }
+  .sec-title svg { width: 16px; height: 16px; }
+  .sec + .sec { margin-top: 40px; }
+  .site-tile {
+    width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+    color: #fff; padding: 16px; text-align: center;
+  }
+  .site-tile .fav { width: 56px; height: 56px; border-radius: 14px; background: rgba(255,255,255,.92); display: grid; place-items: center; overflow: hidden; }
+  .site-tile .fav img { width: 36px; height: 36px; object-fit: contain; }
+  .site-tile .fav svg { width: 30px; height: 30px; color: #555; }
+  .site-tile .host { font-weight: 600; font-size: 15px; word-break: break-word; text-shadow: 0 1px 2px rgba(0,0,0,.25); }
+  .continue .site-thumb { width: 72px; aspect-ratio: 2/3; border-radius: 6px; overflow: hidden; flex: none; }
+  .continue .site-thumb .site-tile { gap: 6px; padding: 6px; }
+  .continue .site-thumb .fav { width: 36px; height: 36px; border-radius: 10px; }
+  .continue .site-thumb .fav img { width: 24px; height: 24px; }
+  .continue .site-thumb .host { display: none; }
+
+  #site-reader { position: fixed; inset: 0; display: none; flex-direction: column; background: var(--bg); z-index: 10; }
+  #site-reader.open { display: flex; }
+  .s-head { flex: 1; min-width: 0; line-height: 1.25; }
+  .s-page { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #s-body webview { flex: 1; min-width: 0; background: #fff; }
+  .icon-btn:disabled { opacity: .35; cursor: default; background: none; }
+  #gh-btn.connected { color: var(--accent); border-color: var(--accent); }
+  .sync { margin: 2px 0 0; font-size: 13px; color: var(--muted); cursor: pointer; }
+  .sync:empty { display: none; }
+  .card-sub { display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; color: var(--muted); height: 18px; }
+
+  @media (max-width: 760px) {
+    #library { padding: 0 16px 48px; }
+    .lib-head h1 { font-size: 28px; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 22px 14px; }
+    .card .actions { opacity: 1; }
+    #side { position: absolute; inset: 0 0 0 auto; width: min(100%, 360px); z-index: 5; box-shadow: var(--shadow); }
+    .hide-sm { display: none !important; }
+    .page .pnum { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+    <symbol id="i-fit" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+    <symbol id="i-notes" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a5 5 0 1 1 .9-9.9A6 6 0 0 1 19 10a4 4 0 0 1 0 8z M12 16v-5 M9.5 13.5 12 11l2.5 2.5"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
+    <symbol id="i-left" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+    <symbol id="i-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-reload" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 9.5V21h14V9.5"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></symbol>
+  </defs>
+</svg>
+
+<!-- ============ LIBRARY ============ -->
+<main id="library">
+  <header class="lib-head">
+    <div>
+      <h1 class="serif">My Bookshelf</h1>
+      <p id="lib-sub">Your PDFs, right where you left them.</p>
+      <p id="sync-status" class="sync"></p>
+    </div>
+    <div class="head-btns">
+      <button class="btn" id="gh-btn" title="Reading log on GitHub"><svg class="i"><use href="#i-cloud"/></svg>Reading log</button>
+      <button class="btn" id="add-site-btn"><svg class="i"><use href="#i-globe"/></svg>Add site</button>
+      <button class="btn primary" id="add-btn"><svg class="i"><use href="#i-plus"/></svg>Add books</button>
+    </div>
+  </header>
+  <div id="continue"></div>
+  <div id="shelf"></div>
+</main>
+<input type="file" id="file-input" accept="application/pdf,.pdf" multiple hidden>
+<div id="drop">Drop PDFs to add them</div>
+
+<!-- ============ READER ============ -->
+<section id="reader">
+  <div class="r-bar">
+    <button class="icon-btn" id="back-btn" title="Back to shelf (Esc)"><svg class="i"><use href="#i-back"/></svg></button>
+    <div class="r-title serif" id="r-title" title="Click to rename"></div>
+    <div class="pager">
+      <button class="icon-btn hide-sm" id="prev-btn" title="Previous page"><svg class="i"><use href="#i-up"/></svg></button>
+      <input id="page-input" inputmode="numeric" aria-label="Page number">
+      <span>/ <span id="page-total">0</span></span>
+      <button class="icon-btn hide-sm" id="next-btn" title="Next page"><svg class="i"><use href="#i-down"/></svg></button>
+    </div>
+    <div class="sep hide-sm"></div>
+    <button class="icon-btn hide-sm" id="zoom-out" title="Zoom out (-)"><svg class="i"><use href="#i-minus"/></svg></button>
+    <span class="zoom-val hide-sm" id="zoom-val">100%</span>
+    <button class="icon-btn hide-sm" id="zoom-in" title="Zoom in (+)"><svg class="i"><use href="#i-plus"/></svg></button>
+    <button class="icon-btn hide-sm" id="zoom-fit" title="Fit width"><svg class="i"><use href="#i-fit"/></svg></button>
+    <div class="sep"></div>
+    <button class="icon-btn" id="side-btn" title="Opinions & notes"><svg class="i"><use href="#i-notes"/></svg></button>
+  </div>
+  <div class="r-progress"><div id="r-progress"></div></div>
+  <div class="r-body">
+    <div id="viewer"><div id="pages"></div><div id="loading">Opening book…</div></div>
+    <aside id="side">
+      <div class="tabs">
+        <button data-tab="opinion" class="on">My opinion</button>
+        <button data-tab="notes">Page notes <span id="notes-count"></span></button>
+      </div>
+      <div class="tab on" id="tab-opinion">
+        <h4>Rating</h4>
+        <div class="stars" id="stars"></div>
+        <h4>What I think</h4>
+        <textarea id="review" rows="12" placeholder="Your thoughts on this book — what you loved, what you didn't, who you'd recommend it to…"></textarea>
+        <div class="saved" id="review-saved"></div>
+      </div>
+      <div class="tab" id="tab-notes">
+        <div class="note-add">
+          <textarea id="note-text" rows="4" placeholder="Write a note about this page…"></textarea>
+          <div class="row">
+            <span id="note-where">Attached to page <b>1</b></span>
+            <button class="btn primary" id="note-save">Add note</button>
+          </div>
+        </div>
+        <div id="notes-list"></div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ============ SITE READER ============ -->
+<section id="site-reader">
+  <div class="r-bar">
+    <button class="icon-btn" id="s-back" title="Back to shelf"><svg class="i"><use href="#i-back"/></svg></button>
+    <button class="icon-btn" id="s-prev" title="Previous page of the site"><svg class="i"><use href="#i-left"/></svg></button>
+    <button class="icon-btn" id="s-next" title="Next page of the site"><svg class="i"><use href="#i-right"/></svg></button>
+    <button class="icon-btn hide-sm" id="s-reload" title="Reload"><svg class="i"><use href="#i-reload"/></svg></button>
+    <div class="s-head">
+      <div class="r-title serif" id="s-title" title="Click to rename"></div>
+      <div class="s-page" id="s-page"></div>
+    </div>
+    <button class="icon-btn hide-sm" id="s-home" title="Go to the site's start page"><svg class="i"><use href="#i-home"/></svg></button>
+    <button class="icon-btn hide-sm" id="s-external" title="Open this page in your browser"><svg class="i"><use href="#i-external"/></svg></button>
+    <div class="sep"></div>
+    <button class="icon-btn" id="s-side-btn" title="Opinions & notes"><svg class="i"><use href="#i-notes"/></svg></button>
+  </div>
+  <div class="r-progress"><div id="s-progress"></div></div>
+  <div class="r-body" id="s-body"></div>
+</section>
+
+<div id="toast"></div>
+
+<dialog id="modal">
+  <form method="dialog">
+    <h3 id="modal-title"></h3>
+    <p id="modal-msg"></p>
+    <input id="modal-input" autocomplete="off">
+    <div class="modal-btns">
+      <button class="btn" value="cancel" formnovalidate>Cancel</button>
+      <button class="btn primary" id="modal-ok" value="ok">OK</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="gh-dialog">
+  <form method="dialog" id="gh-form">
+    <h3>Reading log on GitHub</h3>
+    <p>Each time you finish a reading session, the app rewrites <code>README.md</code> in your repo: what you read, for how long, and which page you're on.</p>
+    <label class="field">Repository
+      <input id="gh-repo" placeholder="your-username/reading-log" autocomplete="off" required>
+    </label>
+    <label class="field">Private sync repository <span class="opt">(your books, PDFs and notes, shared between your PC and phone)</span>
+      <input id="gh-sync-repo" placeholder="your-username/bookshelf-sync" autocomplete="off">
+    </label>
+    <label class="field">Access token
+      <input id="gh-token" type="password" autocomplete="off">
+    </label>
+    <p class="hint">
+      <a href="https://github.com/settings/personal-access-tokens/new" target="_blank">Create a fine-grained token</a>:
+      under <b>Repository access</b> pick <i>Only select repositories</i> and choose your log repo, then under
+      <b>Permissions → Contents</b> choose <i>Read and write</i> (for both repositories). <span id="gh-store-note">It's stored encrypted on this PC.</span>
+    </p>
+    <label class="check"><input type="checkbox" id="gh-opinions"> Also publish my written opinions</label>
+    <div class="gh-status" id="gh-status"></div>
+    <div class="modal-btns">
+      <button class="btn" type="button" id="gh-disconnect">Disconnect</button>
+      <span style="flex:1"></span>
+      <button class="btn" type="button" onclick="this.closest('dialog').close()">Close</button>
+      <button class="btn primary" id="gh-save" value="save">Save &amp; update</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdf.worker.min.js';
+
+const $ = s => document.querySelector(s);
+const icon = (id, cls = 'i') => `<svg class="${cls}"><use href="#${id}"/></svg>`;
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+// In-app replacement for prompt()/confirm(). Resolves to the typed text (input mode), true (confirm mode), or null if cancelled.
+function ask({ title, message = '', value = null, ok = 'OK', danger = false }) {
+  const d = $('#modal'), input = $('#modal-input'), okBtn = $('#modal-ok');
+  $('#modal-title').textContent = title;
+  $('#modal-msg').textContent = message;
+  input.style.display = value === null ? 'none' : '';
+  input.value = value ?? '';
+  okBtn.textContent = ok;
+  okBtn.className = 'btn ' + (danger ? 'danger' : 'primary');
+  d.returnValue = '';
+  d.showModal();
+  if (value !== null) input.select(); else okBtn.focus();
+  return new Promise(res => d.addEventListener('close', () => {
+    if (d.returnValue !== 'ok') return res(null);
+    res(value === null ? true : input.value.trim() || null);
+  }, { once: true }));
+}
+
+function timeAgo(ts) {
+  if (!ts) return 'Not started';
+  const s = (Date.now() - ts) / 1000;
+  if (s < 60) return 'Just now';
+  if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  if (s < 86400 * 7) return Math.floor(s / 86400) + 'd ago';
+  return new Date(ts).toLocaleDateString();
+}
+
+/* ---------------- Storage ---------------- */
+// The whole library lives in one file on disk (library.json), which the desktop side writes safely and backs up.
+// PDFs are separate files. Older versions used the browser database (IndexedDB), which lost data on this PC,
+// so it's now only read once, to move everything over.
+const LIB = { books: {}, sites: {}, sessions: {}, meta: {} };
+const STORE = window.bookshelf?.library;
+const DISK = window.bookshelf?.files;
+
+let libTimer = null, libSaving = Promise.resolve(), libReady = false;
+function libText() {
+  return JSON.stringify({
+    app: 'Bookshelf', version: 1, savedAt: new Date().toISOString(),
+    books: Object.values(LIB.books).map(({ _sig, ...b }) => b), sites: Object.values(LIB.sites).map(({ _sig, ...s }) => s),
+    sessions: Object.values(LIB.sessions), meta: LIB.meta
+  });
+}
+function saveLib() { clearTimeout(libTimer); libTimer = setTimeout(flushLib, 700); }
+function flushLib() {
+  clearTimeout(libTimer);
+  libTimer = null;
+  if (!STORE || !libReady) return libSaving; // never write before the library has loaded
+  const text = libText();
+  libSaving = libSaving.then(() => STORE.save(text)).then(() => true, e => {
+    console.error(e);
+    toast("Couldn't save your library: " + String(e.message).replace(/^.*Error: /, ''));
+    return false;
+  });
+  return libSaving;
+}
+function fillLib(d) {
+  for (const b of d.books || []) { LIB.books[b.id] = b; settle(b); }
+  for (const s of d.sites || []) { LIB.sites[s.id] = s; settle(s); }
+  for (const s of d.sessions || []) LIB.sessions[s.id] = s;
+  Object.assign(LIB.meta, d.meta || {});
+}
+
+// Adds what's missing from `data`; for things that exist in both, keeps the more recently used version
+// and never drops a note. Returns how many things were added or updated.
+function mergeLib(data) {
+  let n = 0;
+  const notesUnion = (a = [], b = []) => { const ids = new Set(a.map(x => x.id)); return [...a, ...b.filter(x => !ids.has(x.id))]; };
+  for (const [kind, list] of [['books', data.books], ['sites', data.sites]]) {
+    for (const x of list || []) {
+      const cur = LIB[kind][x.id];
+      if (!cur) { LIB[kind][x.id] = x; n++; continue; }
+      const newer = (x.lastOpened || 0) > (cur.lastOpened || 0) ? x : cur;
+      const notes = notesUnion(newer.notes, newer === x ? cur.notes : x.notes);
+      if (newer === x || notes.length !== cur.notes.length) { LIB[kind][x.id] = { ...newer, notes }; n++; }
+    }
+  }
+  for (const s of data.sessions || []) if (!LIB.sessions[s.id]) { LIB.sessions[s.id] = s; n++; }
+  for (const [k, v] of Object.entries(data.meta || {})) if (!(k in LIB.meta)) LIB.meta[k] = v;
+  return n;
+}
+
+// read-only look at the old browser database, used once when upgrading
+function readLegacyDB() {
+  return new Promise(res => {
+    let r;
+    try { r = indexedDB.open('bookshelf'); } catch { return res(null); }
+    r.onupgradeneeded = () => { r.transaction.abort(); }; // it never existed: don't create it
+    r.onerror = () => res(null);
+    r.onsuccess = async () => {
+      const db = r.result, out = { books: [], sites: [], sessions: [], meta: {}, files: [] };
+      const all = name => new Promise(ok => {
+        if (!db.objectStoreNames.contains(name)) return ok([]);
+        const q = db.transaction(name).objectStore(name).getAll();
+        q.onsuccess = () => ok(q.result); q.onerror = () => ok([]);
+      });
+      out.books = await all('books'); out.sites = await all('sites'); out.sessions = await all('sessions');
+      for (const m of await all('meta')) out.meta[m.key] = m.value;
+      out.files = await all('files');
+      db.close();
+      res(out);
+    };
+  });
+}
+
+async function loadLibrary() {
+  const saved = await STORE?.load();
+  if (saved) {
+    fillLib(JSON.parse(saved.text));
+    if (saved.from !== 'library.json') setTimeout(() => toast(`Your library was restored from ${saved.from}`), 500);
+    return;
+  }
+  // first start of this version: move everything over from the old database and the last old-style backup
+  const old = await readLegacyDB();
+  if (old) {
+    mergeLib(old);
+    for (const f of old.files) {
+      if (f?.blob && DISK && !(await DISK.has(f.id))) {
+        try { await DISK.save(f.id, await f.blob.arrayBuffer()); } catch (e) { console.error(e); }
+      }
+    }
+  }
+  const legacy = await STORE?.legacyBackup();
+  if (legacy) { try { mergeLib(JSON.parse(legacy)); } catch {} }
+  libReady = true;
+  await flushLib();
+}
+
+const getAllBooks = async () => Object.values(LIB.books);
+const getBook = async id => LIB.books[id];
+const putBook = async b => { LIB.books[b.id] = b; touch(b); saveLib(); };
+async function deleteBook(id) {
+  const book = LIB.books[id];
+  delete LIB.books[id];
+  tombstones().books[id] = Date.now();
+  if (await flushLib()) { await DISK?.remove(id); syncNow('removed a book'); }
+  else { LIB.books[id] = book; delete tombstones().books[id]; } // not saved: keep it
+}
+const getAllSites = async () => Object.values(LIB.sites);
+const getSite = async id => LIB.sites[id];
+const putSite = async s => { LIB.sites[s.id] = s; touch(s); saveLib(); };
+const deleteSite = async id => {
+  const site = LIB.sites[id];
+  delete LIB.sites[id];
+  tombstones().sites[id] = Date.now();
+  if (await flushLib()) syncNow('removed a site');
+  else { LIB.sites[id] = site; delete tombstones().sites[id]; }
+};
+const getAllSessions = async () => Object.values(LIB.sessions);
+const getSession = async id => LIB.sessions[id];
+const putSession = async s => { LIB.sessions[s.id] = s; await flushLib(); };
+const getMeta = async k => LIB.meta[k];
+const setMeta = async (k, value) => { LIB.meta[k] = value; saveLib(); };
+const delMeta = async k => { delete LIB.meta[k]; saveLib(); };
+
+/* ---------------- Sync between devices (private GitHub repo) ---------------- */
+// library.json in the private sync repo holds the reading data (no covers), pdfs/<sha256>.pdf the books themselves.
+// Every book/site has updatedAt: on both sides the newer version wins for page, opinion, etc.;
+// notes are combined from both (deleted ones are remembered in deletedNotes); sessions are combined.
+const SYNC = window.bookshelf?.sync;
+const IS_WEB = window.bookshelf?.platform === 'web';
+const DEVICE = IS_WEB ? 'phone' : 'PC';
+const LOCAL_ONLY = new Set(['cover', 'zoom', '_sig', 'updatedAt']);
+function syncView(x) {
+  const o = {};
+  for (const k of Object.keys(x).sort()) if (!LOCAL_ONLY.has(k)) o[k] = x[k];
+  return o;
+}
+const sigOf = x => JSON.stringify(syncView(x));
+// call after changing a book/site: if anything that syncs changed, it becomes the newest version
+function touch(x) {
+  const sig = sigOf(x);
+  if (sig !== x._sig) { x._sig = sig; x.updatedAt = Date.now(); }
+}
+function settle(x) { x.updatedAt ||= x.lastOpened || x.addedAt || 0; x._sig = sigOf(x); }
+
+const tombstones = () => (LIB.meta.deleted ||= { books: {}, sites: {} });
+const unionIds = (a = [], b = []) => [...new Set([...a, ...b])];
+
+function buildDoc(books, sites, sessions, deleted, readmeKeep) {
+  const byId = (a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+  return JSON.stringify({
+    app: 'Bookshelf', kind: 'sync', version: 1,
+    books: books.map(b => ({ ...syncView(b), updatedAt: b.updatedAt || 0 })).sort(byId),
+    sites: sites.map(s => ({ ...syncView(s), updatedAt: s.updatedAt || 0 })).sort(byId),
+    sessions: [...sessions].sort(byId),
+    deleted: { books: deleted?.books || {}, sites: deleted?.sites || {} },
+    readmeKeep: readmeKeep || null
+  });
+}
+const localDoc = () => buildDoc(Object.values(LIB.books), Object.values(LIB.sites), Object.values(LIB.sessions), tombstones(), LIB.meta.readmeKeep);
+const remoteDoc = r => buildDoc(r.books || [], r.sites || [], r.sessions || [], r.deleted, r.readmeKeep);
+
+// bring the other device's changes in; returns true if anything here changed
+function mergeRemote(r) {
+  let changed = false;
+  const del = tombstones();
+  for (const kind of ['books', 'sites']) {
+    for (const [id, ts] of Object.entries(r.deleted?.[kind] || {})) {
+      if (!(del[kind][id] >= ts)) { del[kind][id] = ts; changed = true; }
+    }
+    for (const x of r[kind] || []) {
+      const l = LIB[kind][x.id];
+      const tomb = del[kind][x.id];
+      if (tomb && tomb >= (x.updatedAt || 0)) continue;
+      if (!l) { LIB[kind][x.id] = { ...x }; settle(LIB[kind][x.id]); changed = true; continue; }
+      const newer = (x.updatedAt || 0) > (l.updatedAt || 0) ? x : l;
+      const deletedNotes = unionIds(l.deletedNotes, x.deletedNotes);
+      const seen = new Set();
+      const notes = [...(newer.notes || []), ...(newer === x ? l.notes || [] : x.notes || [])]
+        .filter(n => !deletedNotes.includes(n.id) && !seen.has(n.id) && seen.add(n.id));
+      const merged = {
+        ...syncView(newer), notes, ...(deletedNotes.length ? { deletedNotes } : {}),
+        hash: l.hash || x.hash, lastOpened: Math.max(l.lastOpened || 0, x.lastOpened || 0) || null,
+        updatedAt: Math.max(l.updatedAt || 0, x.updatedAt || 0)
+      };
+      if (sigOf(merged) !== l._sig || merged.updatedAt !== l.updatedAt) {
+        for (const k of Object.keys(l)) if (!(k in merged) && !LOCAL_ONLY.has(k)) delete l[k];
+        Object.assign(l, merged); // in place, so an open book keeps working; cover and zoom stay local
+        l._sig = sigOf(l);
+        changed = true;
+      }
+    }
+    for (const [id, ts] of Object.entries(del[kind])) {
+      const l = LIB[kind][id];
+      if (l && ts >= (l.updatedAt || 0) && !(R?.book.id === id || W?.site.id === id)) { delete LIB[kind][id]; changed = true; }
+    }
+  }
+  for (const s of r.sessions || []) if (!LIB.sessions[s.id]) { LIB.sessions[s.id] = s; changed = true; }
+  if (r.readmeKeep && !LIB.meta.readmeKeep) { LIB.meta.readmeKeep = r.readmeKeep; changed = true; }
+  return changed;
+}
+
+let syncChainP = Promise.resolve(null), lastSyncAt = 0;
+function syncNow(reason = 'update') {
+  if (!SYNC) return Promise.resolve(null);
+  syncChainP = syncChainP.then(() => doSync(reason)).catch(e => { console.error(e); return { ok: false, error: String(e) }; });
+  return syncChainP;
+}
+async function doSync(reason) {
+  if (!libReady) return null;
+  const cfg = await GH.get();
+  if (!cfg.syncRepo || !cfg.hasToken) return null;
+  lastSyncAt = Date.now();
+  let result = { ok: false, error: 'The sync file kept changing; will retry.' };
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const r = await SYNC.get();
+    if (!r.ok) { result = r; break; }
+    let remote = null;
+    if (r.text) { try { remote = JSON.parse(r.text); } catch { result = { ok: false, error: 'The sync file on GitHub is damaged.' }; break; } }
+    if (remote && mergeRemote(remote)) { await flushLib(); afterSyncChange(); }
+    const text = localDoc();
+    if (remote && text === remoteDoc(remote)) { await SYNC.done(); result = { ok: true }; break; }
+    const p = await SYNC.put(text, r.sha, `${DEVICE}: ${reason}`);
+    if (p.ok) { result = { ok: true }; break; }
+    if (!p.conflict) { result = p; break; }
+  }
+  if (result.ok) await syncPdfs();
+  updateSyncStatus();
+  return result;
+}
+
+// upload PDFs the sync repo doesn't have yet
+let pdfListCache = null;
+async function syncPdfs() {
+  const list = await SYNC.pdfList();
+  if (!list.ok) return;
+  pdfListCache = new Set(list.hashes);
+  for (const b of Object.values(LIB.books)) {
+    if (!b.hash || pdfListCache.has(b.hash) || !(await DISK.has(b.id))) continue;
+    $('#sync-status').textContent = `Uploading “${b.title}” to your private sync repo…`;
+    const up = await SYNC.pdfUpload(b.id, b.hash, b.title);
+    if (up.ok) pdfListCache.add(b.hash);
+    else console.warn('PDF upload failed', b.title, up.error);
+  }
+}
+
+function afterSyncChange() {
+  if (R) { renderNotes(); renderNoteFlags(); }
+  else if (W) renderNotes();
+  else renderLibrary();
+}
+
+async function sha256(bytes) {
+  const h = await crypto.subtle.digest('SHA-256', bytes);
+  return [...new Uint8Array(h)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+// fingerprint books added before syncing existed
+async function fingerprintBooks() {
+  for (const b of Object.values(LIB.books)) {
+    if (b.hash) continue;
+    const bytes = await loadPdfBytes(b.id);
+    if (bytes) { b.hash = await sha256(bytes); settle(b); saveLib(); }
+  }
+}
+
+// keep devices in step: when the app comes back to the front, and every few minutes
+addEventListener('focus', () => { if (Date.now() - lastSyncAt > 60000) syncNow('opened'); });
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && Date.now() - lastSyncAt > 60000) syncNow('opened');
+  if (document.hidden && IS_WEB) { flushLib(); syncNow('saved'); }
+});
+setInterval(() => { if (!document.hidden) syncNow('auto'); }, 5 * 60 * 1000);
+
+// the PDF bytes for a book
+async function loadPdfBytes(id) {
+  const disk = await DISK?.load(id);
+  return disk ? disk.buffer.slice(disk.byteOffset, disk.byteOffset + disk.byteLength) : null;
+}
+
+// Merge JSON files from the import folder (same format as the backups). Adds what's missing, never deletes.
+async function runImports() {
+  const files = await window.bookshelf?.imports?.list();
+  for (const f of files || []) {
+    let data;
+    try { data = JSON.parse(f.json); } catch { console.error('bad import file', f.name); continue; }
+    const added = mergeLib(data);
+    if (data.readmeKeep && !LIB.meta.readmeKeep) LIB.meta.readmeKeep = data.readmeKeep;
+    if (added || data.readmeKeep) LIB.meta.dirty = true;
+    await flushLib();
+    await window.bookshelf.imports.done(f.name);
+    if (added) toast(`Restored ${added} item${added > 1 ? 's' : ''} from ${f.name}`);
+  }
+}
+const backupSoon = () => saveLib();
+const writeBackup = () => flushLib();
+
+function fmtMinutes(min) {
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60), m = min % 60;
+  return m ? `${h}h ${m}m` : `${h}h`;
+}
+function minutesByBook(sessions) {
+  const t = {};
+  for (const s of sessions) t[s.bookId] = (t[s.bookId] || 0) + s.minutes;
+  return t;
+}
+
+/* ---------------- Adding books ---------------- */
+async function addFiles(files) {
+  const pdfs = [...files].filter(f => f.type === 'application/pdf' || /\.pdf$/i.test(f.name));
+  if (!pdfs.length) { toast('Only PDF files can be added'); return; }
+  let added = 0;
+  for (const file of pdfs) {
+    toast(`Adding “${file.name}”…`);
+    try {
+      const bytes = await file.arrayBuffer();
+      const hash = await sha256(bytes);
+      const existing = Object.values(LIB.books).find(b => b.hash === hash);
+      if (existing) {
+        if (await DISK.has(existing.id)) toast(`“${existing.title}” is already on your shelf`);
+        else { await DISK.save(existing.id, bytes); toast(`Linked to “${existing.title}”`); added++; }
+        continue;
+      }
+      const pdf = await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise;
+      const cover = await renderCover(pdf);
+      const book = {
+        id: uid(),
+        title: file.name.replace(/\.pdf$/i, '').replace(/[_]+/g, ' ').trim(),
+        fileName: file.name,
+        size: file.size,
+        addedAt: Date.now(),
+        lastOpened: null,
+        page: 1,
+        pos: null,
+        totalPages: pdf.numPages,
+        zoom: null,
+        cover,
+        rating: 0,
+        review: '',
+        notes: [],
+        hash
+      };
+      pdf.destroy();
+      await DISK.save(book.id, bytes);
+      await putBook(book);
+      added++;
+    } catch (e) {
+      console.error(e);
+      toast(`Couldn't open “${file.name}”${e && e.name === 'PasswordException' ? ' (password protected)' : ''}`);
+    }
+  }
+  if (added) toast(added === 1 ? 'Book added' : `${added} books added`);
+  renderLibrary();
+  backupSoon();
+  if (added) syncNow('added books');
+}
+
+async function renderCover(pdf) {
+  const page = await pdf.getPage(1);
+  const vp1 = page.getViewport({ scale: 1 });
+  const vp = page.getViewport({ scale: 360 / vp1.width });
+  const c = document.createElement('canvas');
+  c.width = vp.width; c.height = vp.height;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+  await page.render({ canvasContext: ctx, viewport: vp }).promise;
+  return c.toDataURL('image/jpeg', 0.82);
+}
+
+/* ---------------- Library view ---------------- */
+function progressOf(b) {
+  if (!b.lastOpened) return 0;
+  return b.totalPages ? Math.min(100, Math.round(b.page / b.totalPages * 100)) : 0;
+}
+function meterHTML(b) {
+  const pct = progressOf(b);
+  const left = !b.lastOpened ? 'Not started'
+    : b.page >= b.totalPages ? '<b>Finished</b>'
+    : `Page <b>${b.page}</b> of ${b.totalPages}`;
+  return `<div class="meter"><div style="width:${pct}%"></div></div>
+          <div class="meter-text"><span>${left}</span><span>${pct}%</span></div>`;
+}
+const starsText = r => r ? '★'.repeat(r) + '☆'.repeat(5 - r) : '';
+
+/* sites: a colored tile with the site's icon, since sites have no cover */
+function hostOf(url) {
+  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return url; }
+}
+function siteTile(s) {
+  let h = 0;
+  for (const c of hostOf(s.url)) h = (h * 31 + c.charCodeAt(0)) % 360;
+  const fav = s.favicon ? `<img src="${esc(s.favicon)}" alt="" onerror="this.replaceWith(document.createRange().createContextualFragment(icon('i-globe')))">` : icon('i-globe');
+  return `<div class="site-tile" style="background:linear-gradient(150deg,hsl(${h} 45% 42%),hsl(${(h + 40) % 360} 50% 30%))">
+    <div class="fav">${fav}</div><div class="host">${esc(hostOf(s.url))}</div></div>`;
+}
+// a plain cover for a book whose PDF is still on the other device
+function bookTile(b) {
+  let h = 20;
+  for (const c of b.title) h = (h * 31 + c.charCodeAt(0)) % 360;
+  return `<div class="site-tile" style="background:linear-gradient(150deg,hsl(${h} 35% 40%),hsl(${(h + 30) % 360} 40% 26%))">
+    <div class="fav">${icon('i-book')}</div><div class="host">${esc(b.title)}</div></div>`;
+}
+function siteMeterHTML(s) {
+  const pct = s.lastOpened ? (s.pos?.pct || 0) : 0;
+  const where = !s.lastOpened ? 'Not visited yet' : `<b>${esc(s.lastPageTitle || hostOf(s.lastUrl || s.url))}</b>`;
+  return `<div class="meter"><div style="width:${pct}%"></div></div>
+          <div class="meter-text"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${where}</span><span>${pct}%</span></div>`;
+}
+
+function cardActions(n) {
+  return `<div class="actions">
+      <button data-act="rename" title="Rename">${icon('i-edit', '')}</button>
+      <button data-act="delete" title="Remove from shelf">${icon('i-trash', '')}</button>
+    </div>
+    ${n ? `<div class="badge">${icon('i-notes', '')}${n}</div>` : ''}`;
+}
+
+async function renderLibrary() {
+  const [books, sites, sessions] = await Promise.all([getAllBooks(), getAllSites(), getAllSessions()]);
+  const timeBy = minutesByBook(sessions);
+  updateSyncStatus();
+  const recent = (a, b) => (b.lastOpened || 0) - (a.lastOpened || 0) || b.addedAt - a.addedAt;
+  books.sort(recent);
+  sites.sort(recent);
+
+  const reading = books.filter(b => b.lastOpened && b.page < b.totalPages).length;
+  const parts = [];
+  if (books.length) parts.push(`${books.length} book${books.length > 1 ? 's' : ''}`);
+  if (sites.length) parts.push(`${sites.length} site${sites.length > 1 ? 's' : ''}`);
+  if (reading) parts.push(`${reading} in progress`);
+  $('#lib-sub').textContent = parts.length ? parts.join(' · ') : 'Your PDFs and sites, right where you left them.';
+
+  const last = [...books, ...sites].filter(x => x.lastOpened).sort(recent)[0];
+  const lastIsSite = last?.kind === 'site';
+  $('#continue').innerHTML = last ? `
+    <div class="continue" data-id="${last.id}" data-kind="${lastIsSite ? 'site' : 'book'}">
+      ${lastIsSite ? `<div class="site-thumb">${siteTile(last)}</div>` : last.cover ? `<img src="${last.cover}" alt="">` : `<div class="site-thumb">${bookTile(last)}</div>`}
+      <div class="grow">
+        <div class="lbl">Continue reading · ${timeAgo(last.lastOpened)}${timeBy[last.id] ? ` · ${fmtMinutes(timeBy[last.id])} read` : ''}</div>
+        <h2 class="serif">${esc(last.title)}</h2>
+        ${lastIsSite ? siteMeterHTML(last) : meterHTML(last)}
+      </div>
+    </div>` : '';
+
+  if (!books.length && !sites.length) {
+    $('#shelf').innerHTML = `
+      <div class="empty">
+        ${icon('i-book')}
+        <h2 class="serif">Your shelf is empty</h2>
+        <p>Click <b>Add books</b> or drop PDF files anywhere on this page, or click <b>Add site</b> to read a website.</p>
+      </div>`;
+    return;
+  }
+  const bookCards = books.map(b => `
+    <article class="card" data-id="${b.id}" data-kind="book" tabindex="0">
+      <div class="cover-wrap">
+        ${b.cover ? `<img src="${b.cover}" alt="" loading="lazy">` : bookTile(b)}
+        ${cardActions(b.notes.length)}
+      </div>
+      <h3>${esc(b.title)}</h3>
+      <div class="card-sub"><span class="stars-mini">${starsText(b.rating)}</span><span>${timeBy[b.id] ? fmtMinutes(timeBy[b.id]) : ''}</span></div>
+      ${meterHTML(b)}
+    </article>`).join('');
+  const siteCards = sites.map(s => `
+    <article class="card" data-id="${s.id}" data-kind="site" tabindex="0">
+      <div class="cover-wrap">
+        ${siteTile(s)}
+        ${cardActions(s.notes.length)}
+      </div>
+      <h3>${esc(s.title)}</h3>
+      <div class="card-sub"><span class="stars-mini">${starsText(s.rating)}</span><span>${timeBy[s.id] ? fmtMinutes(timeBy[s.id]) : ''}</span></div>
+      ${siteMeterHTML(s)}
+    </article>`).join('');
+  $('#shelf').innerHTML =
+    (books.length ? `<section class="sec"><h2 class="sec-title">${icon('i-book')}Books</h2><div class="grid">${bookCards}</div></section>` : '') +
+    (sites.length ? `<section class="sec"><h2 class="sec-title">${icon('i-globe')}Sites</h2><div class="grid">${siteCards}</div></section>` : '');
+}
+
+$('#library').addEventListener('click', async e => {
+  const card = e.target.closest('[data-id]');
+  if (!card) return;
+  const id = card.dataset.id;
+  const isSite = card.dataset.kind === 'site';
+  const get = isSite ? getSite : getBook, put = isSite ? putSite : putBook;
+  const act = e.target.closest('[data-act]')?.dataset.act;
+  if (act === 'rename') {
+    const x = await get(id);
+    const t = await ask({ title: isSite ? 'Rename site' : 'Rename book', value: x.title, ok: 'Save' });
+    if (t) { x.title = t; await put(x); renderLibrary(); }
+  } else if (act === 'delete') {
+    const x = await get(id);
+    if (await ask({ title: `Remove “${x.title}”?`, message: 'Your rating, opinion and notes for it will be deleted too.', ok: 'Remove', danger: true })) {
+      if (isSite) await deleteSite(id); else await deleteBook(id);
+      renderLibrary(); backupSoon(); toast(isSite ? 'Site removed' : 'Book removed');
+    }
+  } else if (isSite) {
+    openSite(id);
+  } else {
+    openBook(id);
+  }
+});
+$('#library').addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || !e.target.classList.contains('card')) return;
+  if (e.target.dataset.kind === 'site') openSite(e.target.dataset.id); else openBook(e.target.dataset.id);
+});
+
+$('#add-site-btn').onclick = async () => {
+  const input = await ask({ title: 'Add a site', message: 'Paste the address of the site you want to read, for example d21.ai', value: '', ok: 'Add' });
+  if (!input) return;
+  let url;
+  try {
+    url = new URL(/^https?:\/\//i.test(input) ? input : 'https://' + input);
+    if (!/^https?:$/.test(url.protocol) || !url.hostname.includes('.')) throw 0;
+  } catch { toast("That doesn't look like a web address"); return; }
+  const site = {
+    id: uid(), kind: 'site', title: hostOf(url.href), url: url.href, lastUrl: url.href,
+    pos: null, lastPageTitle: '', favicon: null, addedAt: Date.now(), lastOpened: null,
+    rating: 0, review: '', notes: []
+  };
+  await putSite(site);
+  renderLibrary();
+  openSite(site.id);
+};
+
+$('#add-btn').onclick = () => $('#file-input').click();
+$('#file-input').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
+
+let dragDepth = 0;
+addEventListener('dragenter', e => { if (e.dataTransfer?.types.includes('Files')) { dragDepth++; $('#drop').classList.add('show'); } });
+addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; $('#drop').classList.remove('show'); } });
+addEventListener('dragover', e => e.preventDefault());
+addEventListener('drop', e => {
+  e.preventDefault(); dragDepth = 0; $('#drop').classList.remove('show');
+  if (e.dataTransfer?.files.length) addFiles(e.dataTransfer.files);
+});
+
+/* ---------------- PDFs that are on the other device ---------------- */
+// download it from the private sync repo, or let the user pick the file
+async function fetchMissingPdf(book) {
+  if (book.hash && SYNC) {
+    toast(`Downloading “${book.title}”…`);
+    const r = await SYNC.pdfDownload(book.id, book.hash);
+    if (r.ok) return loadPdfBytes(book.id);
+    if (r.error !== 'not-found' && r.error !== 'Sync is not set up.') toast("Couldn't download the PDF: " + r.error);
+  }
+  return pickPdfFor(book);
+}
+function chooseFile() {
+  return new Promise(res => {
+    const i = document.createElement('input');
+    i.type = 'file'; i.accept = 'application/pdf,.pdf';
+    i.onchange = () => res(i.files[0] || null);
+    i.addEventListener('cancel', () => res(null));
+    i.click();
+  });
+}
+async function pickPdfFor(book) {
+  const go = await ask({ title: `The PDF for “${book.title}” isn't on this device yet`, message: 'Choose the PDF file to link it to this book.', ok: 'Choose file' });
+  if (!go) return null;
+  const file = await chooseFile();
+  if (!file) return null;
+  const bytes = await file.arrayBuffer();
+  const hash = await sha256(bytes);
+  if (book.hash && hash !== book.hash) {
+    const anyway = await ask({ title: 'This is a different file', message: "It doesn't match the PDF on your other device. Use it anyway?", ok: 'Use it' });
+    if (!anyway) return null;
+  }
+  await DISK.save(book.id, bytes);
+  if (!book.hash) { book.hash = hash; await putBook(book); }
+  return loadPdfBytes(book.id);
+}
+
+/* ---------------- Reader ---------------- */
+const viewer = $('#viewer'), pagesEl = $('#pages');
+let R = null; // current reader state
+
+async function openBook(id) {
+  // pick up where the other device left off (but don't wait long if GitHub is slow)
+  if (SYNC) await Promise.race([syncNow('opening a book'), new Promise(r => setTimeout(r, 4000))]);
+  const book = await getBook(id);
+  if (!book) return;
+  let bytes = await loadPdfBytes(id);
+  if (!bytes) bytes = await fetchMissingPdf(book);
+  if (!bytes) return;
+
+  $('#reader').classList.add('open');
+  $('#loading').classList.add('show');
+  pagesEl.innerHTML = '';
+  $('#r-title').textContent = book.title;
+  $('#side').classList.toggle('hidden', innerWidth < 760);
+  $('#side-btn').classList.toggle('on', innerWidth >= 760);
+
+  let pdf;
+  try {
+    pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+  } catch (e) {
+    console.error(e); toast("Couldn't open this PDF"); closeReader(); return;
+  }
+  if (!book.cover) { try { book.cover = await renderCover(pdf); } catch {} }
+  const base = (await pdf.getPage(1)).getViewport({ scale: 1 });
+  R = {
+    book, pdf, n: pdf.numPages,
+    sizes: Array.from({ length: pdf.numPages }, () => ({ w: base.width, h: base.height })),
+    wrappers: [], tasks: new Map(), scale: 1, cur: book.page || 1
+  };
+  book.totalPages = R.n;
+  R.scale = book.zoom || fitScale();
+
+  for (let i = 1; i <= R.n; i++) {
+    const w = document.createElement('div');
+    w.className = 'page';
+    w.dataset.page = i;
+    w.innerHTML = `<span class="pnum">${i}</span>`;
+    pagesEl.appendChild(w);
+    R.wrappers.push(w);
+  }
+  applySizes();
+  $('#page-total').textContent = R.n;
+  $('#loading').classList.remove('show');
+
+  // jump to the exact spot you left off
+  if (book.pos) restoreAnchor(book.pos);
+  else goToPage(book.page || 1, false);
+
+  observePages();
+  renderSide();
+  book.lastOpened = Date.now();
+  updatePosition();
+  saveNow();
+  startSession(book);
+  if (book.page > 1) toast(`Welcome back — page ${R.cur} of ${R.n}`);
+}
+
+function fitScale() {
+  const avail = viewer.clientWidth - (innerWidth < 760 ? 16 : 80);
+  return Math.max(0.4, Math.min(1.75, avail / R.sizes[0].w));
+}
+
+function applySizes() {
+  R.wrappers.forEach((w, i) => {
+    w.style.width = Math.floor(R.sizes[i].w * R.scale) + 'px';
+    w.style.height = Math.floor(R.sizes[i].h * R.scale) + 'px';
+  });
+  $('#zoom-val').textContent = Math.round(R.scale * 100) + '%';
+  renderNoteFlags();
+}
+
+function observePages() {
+  R.observer?.disconnect();
+  R.observer = new IntersectionObserver(entries => {
+    for (const e of entries) {
+      const i = +e.target.dataset.page;
+      if (e.isIntersecting) renderPage(i); else unrenderPage(i);
+    }
+  }, { root: viewer, rootMargin: '1200px 0px' });
+  R.wrappers.forEach(w => R.observer.observe(w));
+}
+
+async function renderPage(i) {
+  const state = R;
+  if (!state || state.tasks.has(i)) return;
+  const w = state.wrappers[i - 1];
+  state.tasks.set(i, null);
+  try {
+    const page = await state.pdf.getPage(i);
+    if (R !== state || !state.tasks.has(i)) return;
+    const v1 = page.getViewport({ scale: 1 });
+    if (Math.abs(v1.width - state.sizes[i - 1].w) > 0.5 || Math.abs(v1.height - state.sizes[i - 1].h) > 0.5) {
+      // this page has a different size than page 1: keep the reading position steady while resizing
+      const anchor = currentAnchor();
+      state.sizes[i - 1] = { w: v1.width, h: v1.height };
+      w.style.width = Math.floor(v1.width * state.scale) + 'px';
+      w.style.height = Math.floor(v1.height * state.scale) + 'px';
+      restoreAnchor(anchor);
+    }
+    const vp = page.getViewport({ scale: state.scale });
+    const dpr = window.devicePixelRatio || 1;
+    const c = document.createElement('canvas');
+    c.width = Math.floor(vp.width * dpr);
+    c.height = Math.floor(vp.height * dpr);
+    c.style.width = Math.floor(vp.width) + 'px';
+    c.style.height = Math.floor(vp.height) + 'px';
+    const task = page.render({ canvasContext: c.getContext('2d'), viewport: vp, transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : null });
+    state.tasks.set(i, task);
+    await task.promise;
+    if (R !== state || state.tasks.get(i) !== task) return;
+    w.querySelector('canvas')?.remove();
+    w.prepend(c);
+  } catch (e) {
+    if (e?.name !== 'RenderingCancelledException') console.error(e);
+  }
+}
+
+function unrenderPage(i) {
+  if (!R || !R.tasks.has(i)) return;
+  R.tasks.get(i)?.cancel();
+  R.tasks.delete(i);
+  R.wrappers[i - 1].querySelector('canvas')?.remove();
+}
+
+function pageIndexAt(y) {
+  const ws = R.wrappers;
+  let lo = 0, hi = ws.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (ws[mid].offsetTop <= y) lo = mid; else hi = mid - 1;
+  }
+  return lo;
+}
+
+// exact position = page at top of the screen + how far down into it you are
+function currentAnchor() {
+  const top = viewer.scrollTop;
+  const idx = pageIndexAt(top);
+  const w = R.wrappers[idx];
+  return { page: idx + 1, offset: Math.max(0, Math.min(1, (top - w.offsetTop) / w.offsetHeight)) };
+}
+function restoreAnchor(a) {
+  const w = R.wrappers[Math.min(a.page, R.n) - 1];
+  if (w) viewer.scrollTop = w.offsetTop + a.offset * w.offsetHeight;
+}
+
+function goToPage(p, smooth = true) {
+  p = Math.max(1, Math.min(R.n, p | 0));
+  viewer.scrollTo({ top: R.wrappers[p - 1].offsetTop - 12, behavior: smooth ? 'smooth' : 'auto' });
+}
+
+function updatePosition() {
+  if (!R) return;
+  const atBottom = viewer.scrollTop + viewer.clientHeight >= viewer.scrollHeight - 4;
+  R.cur = atBottom ? R.n : pageIndexAt(viewer.scrollTop + viewer.clientHeight * 0.35) + 1;
+  R.book.page = R.cur;
+  R.book.pos = currentAnchor();
+  if (document.activeElement !== $('#page-input')) $('#page-input').value = R.cur;
+  $('#r-progress').style.width = (R.cur / R.n * 100) + '%';
+  $('#note-where').innerHTML = `Attached to page <b>${R.cur}</b>`;
+  if (R.cur === R.n && !R.book.finishedAt) R.book.finishedAt = Date.now();
+}
+
+let saveTimer;
+function saveSoon() { clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 400); }
+function saveNow() { clearTimeout(saveTimer); if (R) putBook(R.book); else if (W) putSite(W.site); }
+
+let scrollRaf = 0;
+viewer.addEventListener('scroll', () => {
+  if (scrollRaf) return;
+  scrollRaf = requestAnimationFrame(() => { scrollRaf = 0; updatePosition(); saveSoon(); });
+});
+
+function setZoom(s) {
+  if (!R) return;
+  const anchor = currentAnchor();
+  R.scale = Math.max(0.3, Math.min(4, s));
+  R.book.zoom = R.scale;
+  for (const i of [...R.tasks.keys()]) unrenderPage(i);
+  applySizes();
+  restoreAnchor(anchor);
+  observePages();
+  saveSoon();
+}
+$('#zoom-in').onclick = () => setZoom(R.scale * 1.15);
+$('#zoom-out').onclick = () => setZoom(R.scale / 1.15);
+$('#zoom-fit').onclick = () => { setZoom(fitScale()); R.book.zoom = null; };
+$('#prev-btn').onclick = () => goToPage(R.cur - 1);
+$('#next-btn').onclick = () => goToPage(R.cur + 1);
+$('#page-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { goToPage(+e.target.value || 1, false); e.target.blur(); }
+});
+$('#page-input').addEventListener('blur', e => { if (R) e.target.value = R.cur; });
+
+$('#r-title').onclick = async () => {
+  const t = await ask({ title: 'Rename book', value: R.book.title, ok: 'Save' });
+  if (t && R) { R.book.title = t; $('#r-title').textContent = R.book.title; saveNow(); }
+};
+
+function closeReader() {
+  if (R) {
+    updatePosition();
+    tickSession();
+    saveNow();
+    R.observer?.disconnect();
+    for (const i of [...R.tasks.keys()]) unrenderPage(i);
+    R.pdf.destroy();
+    R = null;
+  }
+  pagesEl.innerHTML = '';
+  $('#reader').classList.remove('open');
+  renderLibrary();
+  endSession().then(async rec => {
+    await syncNow(rec ? sessionMessage(rec) : 'read');
+    if (rec) { renderLibrary(); syncGitHub(sessionMessage(rec)); }
+    backupSoon();
+  });
+}
+$('#back-btn').onclick = closeReader;
+
+addEventListener('keydown', e => {
+  if ($('#modal').open) return;
+  if (W && e.key === 'Escape' && !/^(TEXTAREA|INPUT)$/.test(document.activeElement?.tagName)) { closeSite(); return; }
+  if (!R) return;
+  const typing = /^(TEXTAREA|INPUT)$/.test(document.activeElement?.tagName);
+  if (e.key === 'Escape') { if (typing) document.activeElement.blur(); else closeReader(); return; }
+  if (typing) return;
+  if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); goToPage(R.cur + 1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); goToPage(R.cur - 1); }
+  else if (e.key === '+' || e.key === '=') setZoom(R.scale * 1.15);
+  else if (e.key === '-') setZoom(R.scale / 1.15);
+});
+addEventListener('visibilitychange', () => {
+  if (document.hidden) { tickSession(); saveNow(); flushLib(); }
+  else if (S) S.lastTick = Date.now(); // time while minimized doesn't count
+});
+addEventListener('pagehide', () => { saveNow(); flushLib(); });
+
+/* ---------------- Site reader ---------------- */
+// Sites open in an embedded browser. Logins are kept (separately from the app's own data).
+// Every 2 seconds we note which page of the site you're on and how far down you've scrolled.
+let W = null; // open site state
+
+// Runs inside the site: finds what actually scrolls (the page, or an inner panel on app-like sites)
+const PROBE_JS = `(() => {
+  const root = document.scrollingElement || document.documentElement;
+  const cssPath = el => {
+    const parts = [];
+    while (el && el.nodeType === 1 && el !== document.body) {
+      if (el.id) { parts.unshift('#' + CSS.escape(el.id)); return parts.join(' > '); }
+      let i = 1, sib = el;
+      while ((sib = sib.previousElementSibling)) i++;
+      parts.unshift(el.tagName.toLowerCase() + ':nth-child(' + i + ')');
+      el = el.parentElement;
+    }
+    return 'body > ' + parts.join(' > ');
+  };
+  const find = () => {
+    if (root.scrollHeight - root.clientHeight > 50) return root;
+    let best = null, extra = 50;
+    for (const n of document.querySelectorAll('body *')) {
+      const x = n.scrollHeight - n.clientHeight;
+      if (x > extra && n.clientHeight > innerHeight * 0.4 && /^(auto|scroll|overlay)$/.test(getComputedStyle(n).overflowY)) { best = n; extra = x; }
+    }
+    return best || root;
+  };
+  let s = window.__bsScroller;
+  if (!s || !s.isConnected || s.scrollHeight - s.clientHeight <= 50) s = window.__bsScroller = find();
+  return { url: location.href, y: Math.round(s.scrollTop), max: Math.max(0, s.scrollHeight - s.clientHeight), sel: s === root ? '' : cssPath(s) };
+})()`;
+const restoreJs = pos => `(() => {
+  const root = document.scrollingElement || document.documentElement;
+  const s = ${JSON.stringify(pos.sel || '')} ? document.querySelector(${JSON.stringify(pos.sel || '')}) : root;
+  if (!s) return 'wait';
+  const max = s.scrollHeight - s.clientHeight;
+  if (max < ${pos.y} - 5) return 'wait';
+  s.scrollTop = ${pos.y};
+  window.__bsScroller = s;
+  return 'ok';
+})()`;
+const fallbackRestoreJs = pos => `(() => {
+  const root = document.scrollingElement || document.documentElement;
+  const s = (${JSON.stringify(pos.sel || '')} && document.querySelector(${JSON.stringify(pos.sel || '')})) || root;
+  s.scrollTop = (s.scrollHeight - s.clientHeight) * ${(pos.pct || 0) / 100};
+})()`;
+
+async function openSite(id) {
+  const site = await getSite(id);
+  if (!site) return;
+  if (IS_WEB) {
+    site.lastOpened = Date.now();
+    await putSite(site);
+    renderLibrary();
+    syncNow('opened a site');
+    window.open(site.lastUrl || site.url, '_blank', 'noopener');
+    return;
+  }
+  const startUrl = site.lastUrl || site.url;
+  W = {
+    site, pageTitle: site.lastPageTitle || '',
+    restore: site.pos && site.pos.y > 0 ? site.pos : null // scroll to put back once the page loads
+  };
+  $('#site-reader').classList.add('open');
+  $('#s-title').textContent = site.title;
+  $('#s-body').appendChild($('#side'));
+  showSide(innerWidth >= 1100);
+
+  const wv = document.createElement('webview');
+  wv.setAttribute('partition', 'persist:sites');
+  wv.setAttribute('allowpopups', '');
+  wv.src = startUrl;
+  W.wv = wv;
+  $('#s-body').prepend(wv);
+
+  wv.addEventListener('did-navigate', e => onSiteNavigate(e.url));
+  wv.addEventListener('did-navigate-in-page', e => { if (e.isMainFrame) onSiteNavigate(e.url); });
+  wv.addEventListener('page-title-updated', e => {
+    if (!W) return;
+    W.pageTitle = e.title;
+    W.site.lastPageTitle = e.title;
+    updateSiteHeader();
+    saveSoon();
+  });
+  wv.addEventListener('page-favicon-updated', e => {
+    const f = e.favicons?.[0];
+    if (W && f && W.site.favicon !== f) { W.site.favicon = f; saveSoon(); }
+  });
+  wv.addEventListener('did-stop-loading', updateSiteHeader);
+  wv.addEventListener('did-finish-load', () => { if (W?.wv === wv && W.restore) restoreSiteScroll(); updateSiteHeader(); });
+  wv.addEventListener('did-fail-load', e => {
+    if (e.isMainFrame && e.errorCode !== -3) toast(`Couldn't load the page: ${e.errorDescription || 'no connection'}`);
+  });
+
+  site.lastOpened = Date.now();
+  saveNow();
+  renderSide();
+  updateSiteHeader();
+  startSession(site);
+  W.poll = setInterval(pollSite, 2000);
+  if (site.pos) toast(`Welcome back — ${site.lastPageTitle || hostOf(startUrl)}`);
+}
+
+function onSiteNavigate(url) {
+  if (!W || !/^https?:/.test(url)) return;
+  if (S) S.lastInput = Date.now();
+  if (url !== W.site.lastUrl && !W.restore) {
+    W.site.lastUrl = url;
+    W.site.pos = { url, y: 0, max: 0, sel: '', pct: 0 };
+    if (S) S.moved = true;
+    saveSoon();
+  }
+  updateSiteHeader();
+}
+
+function updateSiteHeader() {
+  if (!W) return;
+  const url = W.site.lastUrl || W.site.url;
+  let path = '';
+  try { const u = new URL(url); path = u.hostname.replace(/^www\./, '') + (u.pathname === '/' ? '' : u.pathname); } catch {}
+  $('#s-page').textContent = W.pageTitle ? `${W.pageTitle} · ${path}` : path;
+  $('#s-progress').style.width = (W.site.pos?.pct || 0) + '%';
+  $('#note-where').innerHTML = `Attached to <b>${esc(W.pageTitle || hostOf(url))}</b>`;
+  try {
+    $('#s-prev').disabled = !W.wv.canGoBack();
+    $('#s-next').disabled = !W.wv.canGoForward();
+  } catch {}
+}
+
+async function restoreSiteScroll() {
+  const pos = W.restore, wv = W.wv;
+  const samePage = (a, b) => { try { const x = new URL(a), y = new URL(b); return x.host === y.host && x.pathname === y.pathname; } catch { return false; } };
+  if (!samePage(wv.getURL(), pos.url)) { W.restore = null; return; } // landed somewhere else (e.g. a login page)
+  // sites often load their text a moment after the page itself, so keep trying for a few seconds
+  for (let i = 0; i < 14 && W?.wv === wv; i++) {
+    try { if (await wv.executeJavaScript(restoreJs(pos)) === 'ok') break; } catch {}
+    if (i === 13) { try { await wv.executeJavaScript(fallbackRestoreJs(pos)); } catch {} }
+    await new Promise(r => setTimeout(r, 500));
+  }
+  if (W?.wv === wv) W.restore = null;
+}
+
+async function pollSite() {
+  if (!W || W.restore) return;
+  const wv = W.wv;
+  let p;
+  try { p = await wv.executeJavaScript(PROBE_JS); } catch { return; }
+  if (!p || W?.wv !== wv || !/^https?:/.test(p.url)) return;
+  const prev = W.site.pos;
+  if (prev && prev.y === p.y && prev.url === p.url && prev.max === p.max) return;
+  const pct = p.max > 0 ? Math.min(100, Math.round(p.y / p.max * 100)) : 0;
+  W.site.pos = { url: p.url, y: p.y, max: p.max, sel: p.sel, pct };
+  W.site.lastUrl = p.url;
+  if (S && prev && (prev.url !== p.url || Math.abs(prev.y - p.y) > 40)) { S.lastInput = Date.now(); S.moved = true; }
+  updateSiteHeader();
+  saveSoon();
+}
+
+async function closeSite() {
+  if (!W) return;
+  await pollSite();
+  tickSession();
+  saveNow();
+  clearInterval(W.poll);
+  $('#reader .r-body').appendChild($('#side'));
+  W.wv.remove();
+  W = null;
+  $('#site-reader').classList.remove('open');
+  renderLibrary();
+  const rec = await endSession();
+  await syncNow(rec ? sessionMessage(rec) : 'read');
+  if (rec) { renderLibrary(); syncGitHub(sessionMessage(rec)); }
+  backupSoon();
+}
+
+$('#s-back').onclick = closeSite;
+$('#s-prev').onclick = () => W?.wv.canGoBack() && W.wv.goBack();
+$('#s-next').onclick = () => W?.wv.canGoForward() && W.wv.goForward();
+$('#s-reload').onclick = () => W?.wv.reload();
+$('#s-home').onclick = () => W?.wv.loadURL(W.site.url);
+$('#s-external').onclick = () => { if (W) window.open(W.site.lastUrl || W.site.url, '_blank'); };
+$('#s-title').onclick = async () => {
+  const t = await ask({ title: 'Rename site', value: W.site.title, ok: 'Save' });
+  if (t && W) { W.site.title = t; $('#s-title').textContent = t; saveNow(); }
+};
+// typing inside a site counts as activity (the desktop side tells us)
+window.bookshelf?.onSiteActivity?.(() => { if (S) S.lastInput = Date.now(); });
+
+/* ---------------- Opinions & notes ---------------- */
+function showSide(show) {
+  $('#side').classList.toggle('hidden', !show);
+  $('#side-btn').classList.toggle('on', show);
+  $('#s-side-btn').classList.toggle('on', show);
+}
+$('#side-btn').onclick = $('#s-side-btn').onclick = () => showSide($('#side').classList.contains('hidden'));
+// the open book or site
+const item = () => R?.book || W?.site;
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.id === 'tab-' + b.dataset.tab));
+});
+
+function renderSide() {
+  renderStars();
+  $('#review').value = item().review || '';
+  $('#review').placeholder = `Your thoughts on this ${W ? 'site' : 'book'} — what you loved, what you didn't, who you'd recommend it to…`;
+  $('#review-saved').textContent = '';
+  $('#note-text').value = '';
+  renderNotes();
+}
+
+function renderStars() {
+  $('#stars').innerHTML = [1, 2, 3, 4, 5].map(n =>
+    `<button data-n="${n}" class="${n <= item().rating ? 'on' : ''}" title="${n} star${n > 1 ? 's' : ''}">${icon('i-star', '')}</button>`).join('');
+}
+$('#stars').addEventListener('click', e => {
+  const n = +e.target.closest('button')?.dataset.n;
+  if (!n) return;
+  const it = item();
+  it.rating = it.rating === n ? 0 : n;
+  renderStars(); saveNow();
+});
+
+let reviewTimer;
+$('#review').addEventListener('input', e => {
+  if (item()) item().review = e.target.value;
+  $('#review-saved').textContent = 'Saving…';
+  clearTimeout(reviewTimer);
+  reviewTimer = setTimeout(() => { saveNow(); $('#review-saved').textContent = 'Saved'; }, 500);
+});
+
+$('#note-save').onclick = () => {
+  const text = $('#note-text').value.trim();
+  if (!text) { $('#note-text').focus(); return; }
+  if (W) item().notes.push({ id: uid(), url: W.site.lastUrl, pageTitle: W.pageTitle || hostOf(W.site.lastUrl), text, createdAt: Date.now() });
+  else item().notes.push({ id: uid(), page: R.cur, text, createdAt: Date.now() });
+  $('#note-text').value = '';
+  saveNow(); renderNotes(); renderNoteFlags();
+  toast(W ? 'Note added to this page' : `Note added to page ${R.cur}`);
+};
+$('#note-text').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) $('#note-save').click();
+});
+
+function renderNotes() {
+  const notes = [...item().notes].sort((a, b) => (a.page || 0) - (b.page || 0) || a.createdAt - b.createdAt);
+  $('#notes-count').textContent = notes.length ? `(${notes.length})` : '';
+  $('#notes-list').innerHTML = notes.length ? notes.map(n => `
+    <div class="note">
+      <div class="meta">
+        <span>${n.url ? `<a data-url="${esc(n.url)}">${esc(n.pageTitle || hostOf(n.url))}</a>` : `<a data-go="${n.page}">Page ${n.page}</a>`} · ${new Date(n.createdAt).toLocaleDateString()}</span>
+        <button class="del" data-del="${n.id}" title="Delete note">${icon('i-trash', '')}</button>
+      </div>
+      <p>${esc(n.text)}</p>
+    </div>`).join('') : '<p class="muted">No notes yet. Notes are pinned to the page you\'re on, so you can jump back to them later.</p>';
+}
+$('#notes-list').addEventListener('click', async e => {
+  const go = e.target.closest('[data-go]');
+  if (go) { goToPage(+go.dataset.go); if (innerWidth < 760) showSide(false); return; }
+  const link = e.target.closest('[data-url]');
+  if (link && W) { W.wv.loadURL(link.dataset.url); if (innerWidth < 760) showSide(false); return; }
+  const del = e.target.closest('[data-del]');
+  if (del && await ask({ title: 'Delete this note?', ok: 'Delete', danger: true })) {
+    const it = item();
+    it.deletedNotes = [...new Set([...(it.deletedNotes || []), del.dataset.del])];
+    it.notes = it.notes.filter(n => n.id !== del.dataset.del);
+    saveNow(); renderNotes(); renderNoteFlags();
+  }
+});
+
+function renderNoteFlags() {
+  if (!R) return;
+  R.wrappers.forEach(w => w.querySelector('.note-flag')?.remove());
+  const pages = new Set(R.book.notes.map(n => n.page));
+  for (const p of pages) {
+    const f = document.createElement('div');
+    f.className = 'note-flag';
+    f.title = 'This page has notes';
+    f.innerHTML = icon('i-notes', '');
+    f.onclick = () => {
+      $('#side').classList.remove('hidden'); $('#side-btn').classList.add('on');
+      document.querySelector('.tabs [data-tab="notes"]').click();
+    };
+    R.wrappers[p - 1]?.appendChild(f);
+  }
+}
+
+/* ---------------- Reading sessions ---------------- */
+// A session runs from opening a book until going back to the shelf (or closing the app).
+// Only active time counts: not while minimized, and not after 10 minutes without touching anything.
+const IDLE_LIMIT = 10 * 60 * 1000;
+let S = null;
+
+function startSession(it) {
+  const now = Date.now();
+  S = {
+    id: uid(), bookId: it.id, title: it.title, startedAt: now, activeMs: 0, lastTick: now, lastInput: now,
+    ...(it.kind === 'site'
+      ? { kind: 'site', url: it.lastUrl || it.url, pageTitle: it.lastPageTitle || '', moved: false }
+      : { startPage: it.page, endPage: it.page, totalPages: it.totalPages })
+  };
+}
+function tickSession() {
+  if (!S) return;
+  const now = Date.now();
+  if (!document.hidden && now - S.lastInput < IDLE_LIMIT) S.activeMs += Math.min(now - S.lastTick, 60000);
+  S.lastTick = now;
+  if (R && R.book.id === S.bookId) { S.endPage = R.cur; S.title = R.book.title; S.totalPages = R.n; }
+  if (W && W.site.id === S.bookId) {
+    S.title = W.site.title; S.url = W.site.lastUrl || W.site.url;
+    S.pageTitle = W.pageTitle || W.site.lastPageTitle || ''; S.pct = W.site.pos?.pct || 0;
+  }
+}
+// keep a copy on disk so a crash or power cut doesn't lose the session
+setInterval(() => { if (S) { tickSession(); setMeta('activeSession', S); } }, 15000);
+for (const ev of ['scroll', 'wheel', 'keydown', 'pointerdown', 'pointermove']) {
+  addEventListener(ev, () => { if (S) S.lastInput = Date.now(); }, { capture: true, passive: true });
+}
+
+async function endSession() {
+  if (!S) return null;
+  tickSession();
+  const s = S;
+  S = null;
+  await delMeta('activeSession');
+  return recordSession(s);
+}
+async function recordSession(s) {
+  const minutes = Math.round(s.activeMs / 60000);
+  const moved = s.kind === 'site' ? s.moved : s.endPage !== s.startPage;
+  if (minutes < 1 && !moved) return null; // just peeked in
+  const rec = {
+    id: s.id, bookId: s.bookId, title: s.title, startedAt: s.startedAt, endedAt: s.lastTick, minutes: Math.max(1, minutes),
+    ...(s.kind === 'site'
+      ? { kind: 'site', url: s.url, pageTitle: s.pageTitle, pct: s.pct || 0 }
+      : { startPage: s.startPage, endPage: s.endPage, totalPages: s.totalPages })
+  };
+  await putSession(rec);
+  return rec;
+}
+const sessionMessage = s => s.kind === 'site'
+  ? `Read ${s.title} for ${fmtMinutes(s.minutes)} — at “${s.pageTitle || hostOf(s.url)}”`
+  : `Read “${s.title}” for ${fmtMinutes(s.minutes)} — now on page ${s.endPage} of ${s.totalPages}`;
+
+/* ---------------- GitHub reading log ---------------- */
+const GH = window.bookshelf?.github; // only exists in the desktop app
+let syncChain = Promise.resolve();
+
+function syncGitHub(message = 'Update reading log') {
+  if (!GH) return Promise.resolve(null);
+  syncChain = syncChain.then(async () => {
+    const cfg = await GH.get();
+    if (!cfg.repo || !cfg.hasToken) return null;
+    await setMeta('dirty', true);
+    $('#sync-status').textContent = 'Updating reading log on GitHub…';
+    const r = await GH.push(await buildReadme(cfg), message);
+    if (r.ok) await delMeta('dirty');
+    else toast('GitHub update failed: ' + r.error);
+    await updateSyncStatus();
+    return r;
+  }).catch(e => { console.error(e); return { ok: false, error: String(e) }; });
+  return syncChain;
+}
+
+async function updateSyncStatus() {
+  const el = $('#sync-status');
+  if (!GH) { el.hidden = true; $('#gh-btn').hidden = true; return; }
+  const c = await GH.get();
+  const err = c.lastError || (c.syncRepo && c.deviceSyncError);
+  el.className = 'sync' + (err ? ' err' : '');
+  const devices = !c.syncRepo ? '' : c.lastDeviceSync ? ` · devices synced ${timeAgo(c.lastDeviceSync).toLowerCase()}` : '';
+  el.textContent = !c.repo || !c.hasToken ? ''
+    : c.lastError ? `⚠ GitHub update failed: ${c.lastError} (click to fix)`
+    : c.syncRepo && c.deviceSyncError ? `⚠ Sync with your other devices failed: ${c.deviceSyncError} (click to fix)`
+    : c.lastSync ? `✓ Reading log updated ${timeAgo(c.lastSync).toLowerCase()}${devices}`
+    : `Reading log connected to ${c.repo}${devices}`;
+  $('#gh-btn').classList.toggle('connected', !!(c.repo && c.hasToken));
+}
+
+async function buildReadme({ includeOpinions }) {
+  const [books, sites, sessions] = await Promise.all([getAllBooks(), getAllSites(), getAllSessions()]);
+  sessions.sort((a, b) => b.startedAt - a.startedAt);
+  const timeBy = minutesByBook(sessions);
+  const total = sessions.reduce((t, s) => t + s.minutes, 0);
+  const weekAgo = Date.now() - 7 * 864e5;
+  const week = sessions.filter(s => s.startedAt >= weekAgo).reduce((t, s) => t + s.minutes, 0);
+
+  const md = s => String(s).replace(/([\\`*_[\]|<>#])/g, '\\$1');
+  const date = ts => new Date(ts).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  const dateTime = ts => new Date(ts).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  const bar = pct => { const f = Math.round(pct / 10); return '`' + '█'.repeat(f) + '░'.repeat(10 - f) + '`'; };
+  const t = id => timeBy[id] ? fmtMinutes(timeBy[id]) : '—';
+  const link = (text, url) => /^https?:\/\//.test(url || '') ? `[${md(text)}](${url.replace(/[ ()<>]/g, c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0'))})` : md(text);
+  const visited = sites.filter(x => x.lastOpened).sort((a, b) => b.lastOpened - a.lastOpened);
+
+  const reading = books.filter(b => b.lastOpened && b.page < b.totalPages).sort((a, b) => b.lastOpened - a.lastOpened);
+  const finished = books.filter(b => b.lastOpened && b.page >= b.totalPages)
+    .sort((a, b) => (b.finishedAt || b.lastOpened) - (a.finishedAt || a.lastOpened));
+  const shelf = books.filter(b => !b.lastOpened).sort((a, b) => b.addedAt - a.addedAt);
+
+  // The app only owns the part between these markers; anything you write outside them in README.md is kept.
+  const keep = await getMeta('readmeKeep');
+  const out = [
+    ...(keep ? [keep.trim(), ''] : []),
+    '<!-- bookshelf:start -->',
+    '# 📚 My Reading Log', '',
+    `*Updated automatically by my Bookshelf app — last update ${dateTime(Date.now())}*`, '',
+    '| ⏱️ Total reading time | 📅 Last 7 days | 📖 Reading now | ✅ Finished | 🌐 Sites |',
+    '|:-:|:-:|:-:|:-:|:-:|',
+    `| **${fmtMinutes(total)}** | **${fmtMinutes(week)}** | **${reading.length}** | **${finished.length}** | **${sites.length}** |`, ''
+  ];
+
+  if (reading.length) {
+    out.push('## 📖 Currently reading', '', '| Book | Progress | Time read | Last read |', '|---|---|---|---|');
+    for (const b of reading) {
+      const pct = progressOf(b);
+      out.push(`| **${md(b.title)}** | ${bar(pct)} ${pct}% — page ${b.page} of ${b.totalPages} | ${t(b.id)} | ${date(b.lastOpened)} |`);
+    }
+    out.push('');
+  }
+  if (finished.length) {
+    out.push('## ✅ Finished', '', '| Book | Rating | Time read | Finished |', '|---|---|---|---|');
+    for (const b of finished) {
+      out.push(`| **${md(b.title)}** | ${starsText(b.rating) || '—'} | ${t(b.id)} | ${date(b.finishedAt || b.lastOpened)} |`);
+    }
+    out.push('');
+  }
+  if (sites.length) {
+    out.push('## 🌐 Sites', '', '| Site | Where I am | Time read | Last read |', '|---|---|---|---|');
+    for (const x of [...visited, ...sites.filter(x => !x.lastOpened)]) {
+      const where = x.lastOpened
+        ? `${link(x.lastPageTitle || hostOf(x.lastUrl || x.url), x.lastUrl || x.url)}${x.pos?.pct ? ` — ${x.pos.pct}% down the page` : ''}`
+        : 'Not visited yet';
+      out.push(`| **${link(x.title, x.url)}**${x.rating ? ' ' + starsText(x.rating) : ''} | ${where} | ${t(x.id)} | ${x.lastOpened ? date(x.lastOpened) : '—'} |`);
+    }
+    out.push('');
+  }
+  const opinions = includeOpinions ? [...reading, ...finished, ...visited].filter(b => b.review?.trim()) : [];
+  if (opinions.length) {
+    out.push('## 💭 What I think', '');
+    for (const b of opinions) {
+      out.push(`### ${md(b.title)}${b.rating ? ' ' + starsText(b.rating) : ''}`, '');
+      out.push(...b.review.trim().split('\n').map(l => '> ' + l), '');
+    }
+  }
+  if (shelf.length) {
+    out.push('## 📚 On the shelf', '');
+    for (const b of shelf) out.push(`- ${md(b.title)} (${b.totalPages} pages)`);
+    out.push('');
+  }
+
+  out.push('## 🕒 Reading sessions', '');
+  if (!sessions.length) out.push('*No reading sessions yet.*');
+  const MAX = 500;
+  for (const s of sessions.slice(0, MAX)) {
+    if (s.kind === 'site') {
+      out.push(`- **${dateTime(s.startedAt)}** — read 🌐 **${md(s.title)}** for **${fmtMinutes(s.minutes)}**, at ${link(s.pageTitle || hostOf(s.url), s.url)}`);
+      continue;
+    }
+    const moved = s.endPage !== s.startPage ? ` *(from page ${s.startPage})*` : '';
+    out.push(`- **${dateTime(s.startedAt)}** — read **${md(s.title)}** for **${fmtMinutes(s.minutes)}**, now on page **${s.endPage}** of ${s.totalPages}${moved}`);
+  }
+  if (sessions.length > MAX) out.push('', `*…and ${sessions.length - MAX} older sessions.*`);
+  out.push('', '<!-- bookshelf:end -->', '');
+  return out.join('\n');
+}
+
+/* GitHub settings dialog */
+async function openGitHubDialog() {
+  const c = await GH.get();
+  $('#gh-repo').value = c.repo;
+  $('#gh-sync-repo').value = c.syncRepo || '';
+  $('#gh-store-note').textContent = IS_WEB ? 'It stays on this phone.' : "It's stored encrypted on this PC.";
+  $('#gh-token').value = '';
+  $('#gh-token').placeholder = c.hasToken ? 'Saved — leave empty to keep it' : 'github_pat_…';
+  $('#gh-opinions').checked = c.includeOpinions;
+  $('#gh-disconnect').hidden = !c.repo;
+  setGhStatus(c.lastError ? '⚠ ' + c.lastError : '', !!c.lastError);
+  $('#gh-dialog').showModal();
+}
+function setGhStatus(text, err) {
+  $('#gh-status').textContent = text;
+  $('#gh-status').className = 'gh-status' + (err ? ' err' : '');
+}
+$('#gh-form').addEventListener('submit', async e => {
+  if (e.submitter?.value === 'cancel') return;
+  e.preventDefault();
+  const btn = $('#gh-save');
+  btn.disabled = true;
+  setGhStatus('Checking access to the repository…');
+  try {
+    const r = await GH.set({ repo: $('#gh-repo').value, syncRepo: $('#gh-sync-repo').value, token: $('#gh-token').value, includeOpinions: $('#gh-opinions').checked });
+    if (!r.ok) return setGhStatus('⚠ ' + r.error, true);
+    $('#gh-token').value = '';
+    if ($('#gh-sync-repo').value.trim()) {
+      setGhStatus('Syncing with your other devices…');
+      const d = await syncNow('connected');
+      if (d && !d.ok) return setGhStatus('⚠ Sync: ' + d.error, true);
+      renderLibrary();
+    }
+    setGhStatus('Writing README.md…');
+    const s = await syncGitHub('Update Bookshelf reading log');
+    if (s?.ok) { $('#gh-dialog').close(); toast('Reading log updated on GitHub'); }
+    else setGhStatus('⚠ ' + (s?.error || 'Sync failed'), true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+$('#gh-disconnect').onclick = async () => {
+  await GH.clear();
+  $('#gh-dialog').close();
+  updateSyncStatus();
+  toast('Disconnected from GitHub');
+};
+$('#gh-btn').onclick = openGitHubDialog;
+$('#sync-status').onclick = openGitHubDialog;
+
+// When the window is closed while reading, finish the session and update GitHub before quitting.
+window.bookshelf?.onClosing(async () => {
+  try {
+    if (R) { updatePosition(); tickSession(); await putBook(R.book); }
+    if (W) { await pollSite(); tickSession(); await putSite(W.site); }
+    const rec = await endSession();
+    await flushLib();
+    await syncNow(rec ? sessionMessage(rec) : 'closing');
+    if (rec) await syncGitHub(sessionMessage(rec));
+    await flushLib();
+  } finally {
+    window.bookshelf.closeReady();
+  }
+});
+
+/* ---------------- Start ---------------- */
+(async () => {
+  try {
+    await loadLibrary();
+    libReady = true;
+    await runImports();
+    renderLibrary();
+    // a session left over from a crash, or a GitHub update that failed last time
+    const leftover = await getMeta('activeSession');
+    if (leftover) await delMeta('activeSession');
+    const rec = leftover && await recordSession(leftover);
+    await fingerprintBooks();
+    await flushLib();
+    await syncNow('started');
+    renderLibrary();
+    if (rec) syncGitHub(sessionMessage(rec));
+    else if (await getMeta('dirty')) syncGitHub('Update reading log');
+    await flushLib();
+  } catch (e) {
+    console.error(e);
+    $('#shelf').innerHTML = `<div class="empty"><h2>Couldn't open your library</h2><p>${esc(e.message || e)}</p><p>Nothing was changed. Your data and backups are in the app's data folder.</p></div>`;
+  }
+})();
+</script>
+</body>
+</html>
