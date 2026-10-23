@@ -3,22 +3,29 @@
 <!-- bookshelf:start -->
 # 📚 My Reading Log
 
-*Updated automatically by my Bookshelf app — last update Oct 23, 2026, 11:39 AM*
+*Updated automatically by my Bookshelf app — last update Oct 23, 2026, 9:13 PM*
 
 | ⏱️ Total reading time | 📅 Last 7 days | 📖 Reading now | ✅ Finished | 🌐 Sites |
 |:-:|:-:|:-:|:-:|:-:|
-| **3h 7m** | **3h 7m** | **3** | **0** | **0** |
+| **3h 10m** | **3h 10m** | **3** | **0** | **1** |
 
 ## 📖 Currently reading
 
 | Book | Progress | Time read | Last read |
 |---|---|---|---|
-| **1984 romana** | `██░░░░░░░░` 23% — page 52 of 224 | 3h 5m | Oct 23, 2026 |
+| **1984 romana** | `██░░░░░░░░` 24% — page 53 of 224 | 3h 8m | Oct 23, 2026 |
 | **orwell 20george 20- 20ferma 20animalelor** | `░░░░░░░░░░` 3% — page 1 of 33 | — | Oct 18, 2026 |
 | **How-Linux-Works-What-Every-Superuser-Should-Know** | `█░░░░░░░░░` 9% — page 43 of 464 | 2 min | Oct 18, 2026 |
 
+## 🌐 Sites
+
+| Site | Where I am | Time read | Last read |
+|---|---|---|---|
+| **[d21.ai](https://d21.ai/)** | [d21.ai](https://d21.ai/) | — | Oct 23, 2026 |
+
 ## 🕒 Reading sessions
 
+- **Oct 23, 2026, 8:20 PM** — read **1984 romana** for **3 min**, now on page **53** of 224 *(from page 52)*
 - **Oct 23, 2026, 10:23 AM** — read **1984 romana** for **2 min**, now on page **52** of 224
 - **Oct 22, 2026, 10:17 PM** — read **1984 romana** for **19 min**, now on page **52** of 224 *(from page 50)*
 - **Oct 20, 2026, 6:37 PM** — read **1984 romana** for **28 min**, now on page **50** of 224 *(from page 40)*
